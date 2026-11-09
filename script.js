@@ -7,13 +7,15 @@
 // Default State & Configuration
 // ==========================================================================
 const DEFAULT_SETTINGS = {
-  focusDuration: 25,       // in minutes (supports 15, 25, 45, 50, 60, 90, etc.)
+  focusDuration: 25,       // in minutes
   shortBreakDuration: 5,   // in minutes
   longBreakDuration: 15,   // in minutes
   dailyGoal: 4,            // target focus sessions
-  soundEnabled: true,      // sound preference
+  soundEnabled: true,      // chime sound preference
   autoStart: false,        // auto switch and start
-  theme: 'system'          // 'system' | 'light' | 'dark'
+  theme: 'system',         // 'system' | 'light' | 'dark'
+  ambientSound: 'off',     // 'off' | 'rain' | 'waves' | 'breeze' | 'white'
+  ambientVolume: 45        // 0 to 100
 };
 
 const MODE_CONFIG = {
@@ -34,31 +36,42 @@ const MODE_CONFIG = {
   }
 };
 
-// SVG Progress Ring Circumference (2 * Math.PI * radius: 140)
 const RING_CIRCUMFERENCE = 2 * Math.PI * 140;
 
 // Application State
 let appSettings = { ...DEFAULT_SETTINGS };
 
 let timerState = {
-  currentMode: 'focus',      // 'focus' | 'shortBreak' | 'longBreak'
+  currentMode: 'focus',
   isRunning: false,
   totalSeconds: 25 * 60,
   remainingSeconds: 25 * 60,
   endTime: null,
   timerInterval: null,
-  cycleCount: 0              // 0 to 4 within current cycle
+  cycleCount: 0
 };
 
 let dailyProgress = {
   date: getTodayDateString(),
   completedSessions: 0,
-  totalFocusSeconds: 0
+  totalFocusSeconds: 0,
+  completedTasksCount: 0
+};
+
+// Web Audio API Ambient Sound Context
+let ambientAudio = {
+  ctx: null,
+  gainNode: null,
+  sourceNode: null,
+  filterNode: null,
+  lfoNode: null,
+  currentType: 'off'
 };
 
 // ==========================================================================
 // DOM Elements
 // ==========================================================================
+const countdownWrapper = document.getElementById('countdownWrapper');
 const timeDisplay = document.getElementById('timeDisplay');
 const timerStatus = document.getElementById('timerStatus');
 const progressCircle = document.getElementById('progressCircle');
@@ -76,6 +89,11 @@ const modeTabs = {
   shortBreak: document.getElementById('modeShortBreak'),
   longBreak: document.getElementById('modeLongBreak')
 };
+
+// Task Focus Elements
+const taskInput = document.getElementById('taskInput');
+const taskDoneBtn = document.getElementById('taskDoneBtn');
+const taskCountBadge = document.getElementById('taskCountBadge');
 
 // Progress & Goal Elements
 const cycleDotsContainer = document.getElementById('cycleDots');
@@ -100,9 +118,20 @@ const themeIconMoon = document.getElementById('themeIconMoon');
 const soundToggleBtn = document.getElementById('soundToggleBtn');
 const soundIconOn = document.getElementById('soundIconOn');
 const soundIconOff = document.getElementById('soundIconOff');
+const zenToggleBtn = document.getElementById('zenToggleBtn');
+const zenIconExpand = document.getElementById('zenIconExpand');
+const zenIconCompress = document.getElementById('zenIconCompress');
+const shortcutsBtn = document.getElementById('shortcutsBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 
-// Modal Elements
+// Ambient Popover Elements
+const ambientToggleBtn = document.getElementById('ambientToggleBtn');
+const ambientPopover = document.getElementById('ambientPopover');
+const ambientStatusText = document.getElementById('ambientStatusText');
+const ambientVolumeSlider = document.getElementById('ambientVolumeSlider');
+const ambientOptBtns = document.querySelectorAll('.ambient-opt-btn');
+
+// Modals
 const settingsModal = document.getElementById('settingsModal');
 const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
@@ -117,8 +146,12 @@ const themeSelect = document.getElementById('themeSelect');
 const testSoundBtn = document.getElementById('testSoundBtn');
 const techniquePresetBtns = document.querySelectorAll('.technique-preset-btn');
 
-// Toast Notification Container
+const shortcutsModal = document.getElementById('shortcutsModal');
+const closeShortcutsBtn = document.getElementById('closeShortcutsBtn');
+
+// Toast & Confetti
 const toastContainer = document.getElementById('toastContainer');
+const confettiCanvas = document.getElementById('confettiCanvas');
 
 // ==========================================================================
 // Initialization
@@ -126,12 +159,14 @@ const toastContainer = document.getElementById('toastContainer');
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
   loadDailyProgress();
+  loadTask();
   initTheme();
   setupSVGProgressRing();
   renderPresetChips();
   resetTimer(false);
   updateStatistics();
   updateCycleProgressDisplay();
+  initAmbientUI();
   attachEventListeners();
 });
 
@@ -146,10 +181,6 @@ function setupSVGProgressRing() {
 // Timer Core Functions
 // ==========================================================================
 
-/**
- * Starts or resumes the Pomodoro countdown.
- * Uses timestamp-based calculation for precision across background tabs.
- */
 function startTimer() {
   if (timerState.isRunning) return;
 
@@ -158,6 +189,7 @@ function startTimer() {
 
   updateControlsState(true);
   timerStatus.textContent = 'Timer running';
+  if (countdownWrapper) countdownWrapper.classList.add('is-running');
 
   tick();
 
@@ -168,9 +200,6 @@ function startTimer() {
   }, 250);
 }
 
-/**
- * Pauses the active countdown.
- */
 function pauseTimer() {
   if (!timerState.isRunning) return;
 
@@ -187,14 +216,12 @@ function pauseTimer() {
 
   updateControlsState(false);
   timerStatus.textContent = 'Timer paused';
+  if (countdownWrapper) countdownWrapper.classList.remove('is-running');
+
   updateTimerDisplay();
   updateProgressRing();
 }
 
-/**
- * Resets the current session timer to its starting duration.
- * @param {boolean} notify - Whether to show a toast message
- */
 function resetTimer(notify = true) {
   pauseTimer();
 
@@ -212,9 +239,6 @@ function resetTimer(notify = true) {
   }
 }
 
-/**
- * Skips the current session and advances to the next in cycle.
- */
 function skipSession() {
   pauseTimer();
   const skippedMode = timerState.currentMode;
@@ -222,9 +246,6 @@ function skipSession() {
   advanceCycle(false);
 }
 
-/**
- * Internal tick handler calculated via wall-clock timestamp.
- */
 function tick() {
   if (!timerState.isRunning) return;
 
@@ -240,9 +261,6 @@ function tick() {
   }
 }
 
-/**
- * Triggered when a session countdown reaches zero.
- */
 function completeSession() {
   pauseTimer();
 
@@ -258,10 +276,14 @@ function completeSession() {
     updateStatistics();
     updateCycleProgressDisplay();
 
+    // Trigger celebration confetti
+    triggerConfetti();
+
     showToast('Focus session completed! Great work.');
 
     if (dailyProgress.completedSessions === appSettings.dailyGoal) {
       setTimeout(() => {
+        triggerConfetti(90);
         showToast("🎉 Congratulations! You've reached today's focus goal.");
       }, 1000);
     }
@@ -272,11 +294,6 @@ function completeSession() {
   advanceCycle(true);
 }
 
-/**
- * Advances the Pomodoro technique sequence:
- * Focus (1) -> Short Break -> Focus (2) -> Short Break ->
- * Focus (3) -> Short Break -> Focus (4) -> Long Break -> Repeat
- */
 function advanceCycle(completedNaturally = false) {
   let nextMode = 'focus';
 
@@ -297,16 +314,12 @@ function advanceCycle(completedNaturally = false) {
   }
 }
 
-/**
- * Switches between Focus, Short Break, and Long Break modes.
- */
 function switchMode(mode, userInitiated = true) {
   if (!MODE_CONFIG[mode]) return;
 
   pauseTimer();
   timerState.currentMode = mode;
 
-  // Update tabs active state
   Object.keys(modeTabs).forEach(key => {
     const tab = modeTabs[key];
     const isActive = key === mode;
@@ -314,11 +327,9 @@ function switchMode(mode, userInitiated = true) {
     tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
 
-  // Update current mode on body for dynamic accent styling
   document.body.setAttribute('data-current-mode', mode);
   modeMessage.textContent = MODE_CONFIG[mode].message;
 
-  // Render preset chips for this mode
   renderPresetChips();
 
   const duration = getDurationForMode(mode);
@@ -366,9 +377,6 @@ function setDurationForMode(mode, minutes) {
 // Preset Chips Management
 // ==========================================================================
 
-/**
- * Renders the quick duration preset chips for the active mode.
- */
 function renderPresetChips() {
   if (!presetChipsGroup) return;
 
@@ -393,9 +401,6 @@ function renderPresetChips() {
   });
 }
 
-/**
- * Handles clicking a quick duration preset chip.
- */
 function selectDurationPreset(minutes) {
   setDurationForMode(timerState.currentMode, minutes);
   highlightActivePresetChip();
@@ -420,6 +425,288 @@ function highlightActivePresetChip() {
     const mins = parseInt(chip.getAttribute('data-minutes'), 10);
     chip.classList.toggle('active', mins === activeDuration);
   });
+}
+
+// ==========================================================================
+// Focus Task Management
+// ==========================================================================
+
+function loadTask() {
+  const savedTask = localStorage.getItem('pomodoro_current_task');
+  if (savedTask && taskInput) {
+    taskInput.value = savedTask;
+  }
+  updateTaskBadge();
+}
+
+function updateTaskBadge() {
+  if (!taskCountBadge) return;
+  const count = dailyProgress.completedTasksCount || 0;
+  if (count > 0) {
+    taskCountBadge.textContent = `${count} completed`;
+    taskCountBadge.classList.remove('hidden');
+  } else {
+    taskCountBadge.classList.add('hidden');
+  }
+}
+
+function completeActiveTask() {
+  const currentText = taskInput.value.trim();
+  if (!currentText) {
+    showToast('Enter a task name first!');
+    taskInput.focus();
+    return;
+  }
+
+  dailyProgress.completedTasksCount = (dailyProgress.completedTasksCount || 0) + 1;
+  saveDailyProgress();
+  updateTaskBadge();
+
+  // Celebration
+  triggerConfetti(45);
+  showToast(`Completed task: "${currentText}" 🎉`);
+
+  taskInput.value = '';
+  localStorage.removeItem('pomodoro_current_task');
+  taskInput.placeholder = 'Great job! What will you focus on next?';
+}
+
+// ==========================================================================
+// Ambient Audio Generator (Web Audio API)
+// ==========================================================================
+
+function initAmbientUI() {
+  ambientVolumeSlider.value = appSettings.ambientVolume;
+
+  ambientOptBtns.forEach(btn => {
+    const type = btn.getAttribute('data-sound');
+    btn.classList.toggle('active', type === appSettings.ambientSound);
+    btn.addEventListener('click', () => {
+      setAmbientSound(type);
+    });
+  });
+
+  ambientVolumeSlider.addEventListener('input', (e) => {
+    appSettings.ambientVolume = parseInt(e.target.value, 10);
+    saveSettings();
+    if (ambientAudio.gainNode && ambientAudio.ctx) {
+      ambientAudio.gainNode.gain.setValueAtTime(appSettings.ambientVolume / 100, ambientAudio.ctx.currentTime);
+    }
+  });
+
+  ambientToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    ambientPopover.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!ambientPopover.contains(e.target) && e.target !== ambientToggleBtn) {
+      ambientPopover.classList.add('hidden');
+    }
+  });
+}
+
+function setAmbientSound(type) {
+  appSettings.ambientSound = type;
+  saveSettings();
+
+  ambientOptBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-sound') === type);
+  });
+
+  ambientStatusText.textContent = type === 'off' ? 'Off' : type.charAt(0).toUpperCase() + type.slice(1);
+
+  stopAmbientSound();
+
+  if (type === 'off') {
+    showToast('Ambient sound turned off.');
+    return;
+  }
+
+  startAmbientSound(type);
+  showToast(`Playing ambient ${type} sound 🎧`);
+}
+
+function startAmbientSound(type) {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    if (!ambientAudio.ctx) {
+      ambientAudio.ctx = new AudioContextClass();
+    }
+    const ctx = ambientAudio.ctx;
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    // Master volume gain
+    ambientAudio.gainNode = ctx.createGain();
+    ambientAudio.gainNode.gain.setValueAtTime(appSettings.ambientVolume / 100, ctx.currentTime);
+    ambientAudio.gainNode.connect(ctx.destination);
+
+    // Generate 5-second noise buffer
+    const bufferSize = ctx.sampleRate * 5;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+
+    let lastOut = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      if (type === 'waves' || type === 'breeze') {
+        // Brown noise
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5;
+      } else {
+        // Pinkish / rain noise
+        output[i] = (lastOut * 0.95) + (white * 0.05);
+        lastOut = output[i];
+        output[i] *= 2.5;
+      }
+    }
+
+    const whiteNoise = ctx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+
+    // Filter
+    ambientAudio.filterNode = ctx.createBiquadFilter();
+
+    if (type === 'rain') {
+      ambientAudio.filterNode.type = 'lowpass';
+      ambientAudio.filterNode.frequency.setValueAtTime(800, ctx.currentTime);
+    } else if (type === 'waves') {
+      ambientAudio.filterNode.type = 'lowpass';
+      ambientAudio.filterNode.frequency.setValueAtTime(500, ctx.currentTime);
+
+      // Periodic swell (LFO)
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.frequency.setValueAtTime(0.12, ctx.currentTime);
+      lfoGain.gain.setValueAtTime(0.4, ctx.currentTime);
+      lfo.connect(lfoGain);
+      lfoGain.connect(ambientAudio.gainNode.gain);
+      lfo.start();
+      ambientAudio.lfoNode = lfo;
+    } else if (type === 'breeze') {
+      ambientAudio.filterNode.type = 'bandpass';
+      ambientAudio.filterNode.frequency.setValueAtTime(900, ctx.currentTime);
+      ambientAudio.filterNode.Q.setValueAtTime(1.2, ctx.currentTime);
+    } else {
+      ambientAudio.filterNode.type = 'lowpass';
+      ambientAudio.filterNode.frequency.setValueAtTime(1200, ctx.currentTime);
+    }
+
+    whiteNoise.connect(ambientAudio.filterNode);
+    ambientAudio.filterNode.connect(ambientAudio.gainNode);
+    whiteNoise.start();
+
+    ambientAudio.sourceNode = whiteNoise;
+    ambientAudio.currentType = type;
+  } catch (e) {
+    console.warn('Ambient sound error:', e);
+  }
+}
+
+function stopAmbientSound() {
+  if (ambientAudio.sourceNode) {
+    try {
+      ambientAudio.sourceNode.stop();
+      ambientAudio.sourceNode.disconnect();
+    } catch (e) {}
+    ambientAudio.sourceNode = null;
+  }
+  if (ambientAudio.lfoNode) {
+    try {
+      ambientAudio.lfoNode.stop();
+      ambientAudio.lfoNode.disconnect();
+    } catch (e) {}
+    ambientAudio.lfoNode = null;
+  }
+}
+
+// ==========================================================================
+// Zen Focus Mode
+// ==========================================================================
+
+function toggleZenMode() {
+  const isZen = document.body.classList.toggle('zen-mode');
+  if (isZen) {
+    zenIconExpand.classList.add('hidden');
+    zenIconCompress.classList.remove('hidden');
+    showToast('Zen mode enabled. Press F or Esc to exit.');
+  } else {
+    zenIconExpand.classList.remove('hidden');
+    zenIconCompress.classList.add('hidden');
+    showToast('Exited Zen mode.');
+  }
+}
+
+// ==========================================================================
+// Confetti Animation Engine
+// ==========================================================================
+
+function triggerConfetti(count = 60) {
+  if (!confettiCanvas) return;
+
+  const ctx = confettiCanvas.getContext('2d');
+  const width = (confettiCanvas.width = window.innerWidth);
+  const height = (confettiCanvas.height = window.innerHeight);
+
+  const colors = ['#E76F51', '#2A9D8F', '#E9C46A', '#F4A261', '#4EA8DE', '#8338EC'];
+  const particles = [];
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: width * 0.5 + (Math.random() * 200 - 100),
+      y: height * 0.45,
+      size: Math.random() * 7 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 12,
+      vy: Math.random() * -10 - 4,
+      gravity: 0.35,
+      rotation: Math.random() * 360,
+      vRotation: (Math.random() - 0.5) * 8,
+      opacity: 1
+    });
+  }
+
+  let animationFrameId;
+
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+
+    let activeParticles = 0;
+
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+      p.rotation += p.vRotation;
+      p.opacity -= 0.012;
+
+      if (p.opacity > 0) {
+        activeParticles++;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.globalAlpha = Math.max(0, p.opacity);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+        ctx.restore();
+      }
+    });
+
+    if (activeParticles > 0) {
+      animationFrameId = requestAnimationFrame(render);
+    } else {
+      ctx.clearRect(0, 0, width, height);
+      cancelAnimationFrame(animationFrameId);
+    }
+  }
+
+  render();
 }
 
 // ==========================================================================
@@ -451,12 +738,12 @@ function updateControlsState(isRunning) {
     playIcon.classList.add('hidden');
     pauseIcon.classList.remove('hidden');
     startPauseLabel.textContent = 'Pause';
-    startPauseBtn.setAttribute('aria-label', 'Pause timer');
+    startPauseBtn.setAttribute('aria-label', 'Pause timer (Space)');
   } else {
     playIcon.classList.remove('hidden');
     pauseIcon.classList.add('hidden');
     startPauseLabel.textContent = 'Start';
-    startPauseBtn.setAttribute('aria-label', 'Start timer');
+    startPauseBtn.setAttribute('aria-label', 'Start timer (Space)');
   }
 }
 
@@ -505,6 +792,8 @@ function updateStatistics() {
     const remaining = target - completed;
     goalMotivationalText.textContent = `${remaining} more session${remaining > 1 ? 's' : ''} to reach your goal.`;
   }
+
+  updateTaskBadge();
 }
 
 // ==========================================================================
@@ -518,7 +807,7 @@ function loadSettings() {
       appSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
     }
   } catch (e) {
-    console.error('Error loading settings from localStorage', e);
+    console.error('Error loading settings', e);
   }
 }
 
@@ -526,7 +815,7 @@ function saveSettings() {
   try {
     localStorage.setItem('pomodoro_settings', JSON.stringify(appSettings));
   } catch (e) {
-    console.error('Error saving settings to localStorage', e);
+    console.error('Error saving settings', e);
   }
 }
 
@@ -605,6 +894,7 @@ function checkDateRollover() {
     dailyProgress.date = today;
     dailyProgress.completedSessions = 0;
     dailyProgress.totalFocusSeconds = 0;
+    dailyProgress.completedTasksCount = 0;
     saveDailyProgress();
   }
 }
@@ -678,7 +968,7 @@ function toggleTheme() {
 }
 
 // ==========================================================================
-// Sound & Notifications (Web Audio API)
+// Notification Chime Sound (Web Audio API)
 // ==========================================================================
 
 function playNotificationSound() {
@@ -689,7 +979,7 @@ function playNotificationSound() {
     if (!AudioContextClass) return;
 
     const ctx = new AudioContextClass();
-    const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
+    const frequencies = [523.25, 659.25, 783.99];
 
     frequencies.forEach((freq, index) => {
       const osc = ctx.createOscillator();
@@ -712,7 +1002,7 @@ function playNotificationSound() {
       osc.stop(startTime + duration);
     });
   } catch (e) {
-    console.warn('Audio playback error:', e);
+    console.warn('Audio chime error:', e);
   }
 }
 
@@ -742,7 +1032,7 @@ function updateSoundIconUI() {
 // Toast Notifications
 // ==========================================================================
 
-function showToast(message, duration = 4000) {
+function showToast(message, duration = 3800) {
   if (!toastContainer) return;
 
   const toast = document.createElement('div');
@@ -806,12 +1096,27 @@ function attachEventListeners() {
   modeTabs.shortBreak.addEventListener('click', () => switchMode('shortBreak', true));
   modeTabs.longBreak.addEventListener('click', () => switchMode('longBreak', true));
 
-  // Cycle Dots (Click to set session cycle step directly)
+  // Focus Task input & completion
+  if (taskInput) {
+    taskInput.addEventListener('input', (e) => {
+      localStorage.setItem('pomodoro_current_task', e.target.value);
+    });
+    taskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        completeActiveTask();
+      }
+    });
+  }
+
+  if (taskDoneBtn) {
+    taskDoneBtn.addEventListener('click', completeActiveTask);
+  }
+
+  // Cycle Dots
   const dots = cycleDotsContainer.querySelectorAll('.dot');
   dots.forEach(dot => {
-    dot.addEventListener('click', (e) => {
+    dot.addEventListener('click', () => {
       const index = parseInt(dot.getAttribute('data-index'), 10);
-      // Toggle or set count to index + 1
       timerState.cycleCount = (timerState.cycleCount === index + 1) ? index : index + 1;
       updateCycleProgressDisplay();
       showToast(`Cycle progress set to ${timerState.cycleCount} of 4.`);
@@ -834,7 +1139,7 @@ function attachEventListeners() {
       dailyProgress.totalFocusSeconds += (appSettings.focusDuration * 60);
       saveDailyProgress();
       updateStatistics();
-      showToast('+1 focus session logged manually.');
+      showToast('+1 focus session logged.');
     });
   }
 
@@ -853,7 +1158,21 @@ function attachEventListeners() {
   // Header Buttons
   themeToggleBtn.addEventListener('click', toggleTheme);
   soundToggleBtn.addEventListener('click', toggleSound);
+  zenToggleBtn.addEventListener('click', toggleZenMode);
   settingsBtn.addEventListener('click', openSettingsModal);
+
+  // Shortcuts Guide
+  shortcutsBtn.addEventListener('click', () => {
+    shortcutsModal.classList.remove('hidden');
+  });
+  closeShortcutsBtn.addEventListener('click', () => {
+    shortcutsModal.classList.add('hidden');
+  });
+  shortcutsModal.addEventListener('click', (e) => {
+    if (e.target === shortcutsModal) {
+      shortcutsModal.classList.add('hidden');
+    }
+  });
 
   // Settings Presets buttons
   techniquePresetBtns.forEach(btn => {
@@ -891,18 +1210,44 @@ function attachEventListeners() {
 
   // Keyboard navigation
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !settingsModal.classList.contains('hidden')) {
-      closeSettingsModal();
+    // If modal is open, Escape closes it
+    if (e.key === 'Escape') {
+      if (!settingsModal.classList.contains('hidden')) {
+        closeSettingsModal();
+        return;
+      }
+      if (!shortcutsModal.classList.contains('hidden')) {
+        shortcutsModal.classList.add('hidden');
+        return;
+      }
+      if (document.body.classList.contains('zen-mode')) {
+        toggleZenMode();
+        return;
+      }
+    }
+
+    // Ignore single key shortcuts when typing in inputs
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
       return;
     }
 
-    if (e.code === 'Space' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+    if (e.code === 'Space') {
       e.preventDefault();
       if (timerState.isRunning) {
         pauseTimer();
       } else {
         startTimer();
       }
+    } else if (e.key.toLowerCase() === 'r') {
+      resetTimer(true);
+    } else if (e.key.toLowerCase() === 's') {
+      skipSession();
+    } else if (e.key.toLowerCase() === 'f') {
+      toggleZenMode();
+    } else if (e.key.toLowerCase() === 'm') {
+      toggleSound();
+    } else if (e.key === '?') {
+      shortcutsModal.classList.toggle('hidden');
     }
   });
 

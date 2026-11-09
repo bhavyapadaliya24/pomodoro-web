@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pomodoro — Make time count</title>
-  <meta name="description" content="A calm, minimal, aesthetic, and fully functional Pomodoro & deep work study timer to boost productivity and focus.">
+  <meta name="description" content="A calm, minimal, aesthetic, and fully functional Pomodoro & deep work study timer with ambient sound and task focus.">
   <meta name="theme-color" content="#F8F7F4">
   
   <!-- Google Fonts: Inter -->
@@ -15,6 +15,9 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Confetti Canvas (for celebrations) -->
+  <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
   <!-- Header -->
   <header class="app-header">
     <div class="header-left">
@@ -33,6 +36,52 @@
     </div>
 
     <div class="header-right">
+      <!-- Ambient Sound Button & Popover -->
+      <div class="ambient-menu-container">
+        <button id="ambientToggleBtn" class="icon-btn" aria-label="Toggle ambient study audio" data-tooltip="Ambient sounds">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2z"></path>
+            <path d="M20 12h2a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2z"></path>
+            <path d="M6 8a6 6 0 0 1 12 0v8a6 6 0 0 1-12 0z"></path>
+          </svg>
+        </button>
+
+        <div id="ambientPopover" class="ambient-popover hidden" role="dialog" aria-label="Ambient sound controls">
+          <div class="popover-header">
+            <span class="popover-title">Ambient Sound</span>
+            <span id="ambientStatusText" class="popover-status">Off</span>
+          </div>
+          <div class="ambient-options">
+            <button type="button" class="ambient-opt-btn active" data-sound="off">Off</button>
+            <button type="button" class="ambient-opt-btn" data-sound="rain">🌧️ Rain</button>
+            <button type="button" class="ambient-opt-btn" data-sound="waves">🌊 Waves</button>
+            <button type="button" class="ambient-opt-btn" data-sound="breeze">🍃 Breeze</button>
+            <button type="button" class="ambient-opt-btn" data-sound="white">💨 Pink Noise</button>
+          </div>
+          <div class="ambient-volume-row">
+            <span class="volume-label">Volume</span>
+            <input type="range" id="ambientVolumeSlider" min="0" max="100" value="45" aria-label="Ambient sound volume">
+          </div>
+        </div>
+      </div>
+
+      <!-- Zen / Fullscreen Toggle -->
+      <button id="zenToggleBtn" class="icon-btn" aria-label="Toggle Zen Focus Mode" data-tooltip="Zen mode (F)">
+        <svg id="zenIconExpand" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+        <svg id="zenIconCompress" class="icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 14 10 14 10 20"></polyline>
+          <polyline points="20 10 14 10 14 4"></polyline>
+          <line x1="14" y1="10" x2="21" y2="3"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      </button>
+
+      <!-- Sound Toggle -->
       <button id="soundToggleBtn" class="icon-btn" aria-label="Toggle notification sound" data-tooltip="Sound: On">
         <svg id="soundIconOn" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -46,6 +95,7 @@
         </svg>
       </button>
 
+      <!-- Theme Toggle -->
       <button id="themeToggleBtn" class="icon-btn" aria-label="Toggle dark mode" data-tooltip="Switch theme">
         <svg id="themeIconSun" class="icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"></circle>
@@ -63,6 +113,16 @@
         </svg>
       </button>
 
+      <!-- Shortcuts Guide Button -->
+      <button id="shortcutsBtn" class="icon-btn" aria-label="Keyboard shortcuts" data-tooltip="Shortcuts (?)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </button>
+
+      <!-- Settings Button -->
       <button id="settingsBtn" class="icon-btn" aria-label="Open settings" data-tooltip="Settings">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
@@ -80,6 +140,19 @@
       <p class="hero-subtitle">Small sessions. Big progress.</p>
     </section>
 
+    <!-- Active Task Focus Banner -->
+    <section class="task-focus-banner" aria-label="Current task focus">
+      <div class="task-bar">
+        <button id="taskDoneBtn" class="task-checkbox-btn" aria-label="Mark task complete" title="Complete task">
+          <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </button>
+        <input type="text" id="taskInput" class="task-input" placeholder="What are you focusing on?" maxlength="70" aria-label="Focus task description">
+        <span id="taskCountBadge" class="task-count-badge hidden" title="Tasks completed today">0 done</span>
+      </div>
+    </section>
+
     <!-- Timer Card -->
     <section class="timer-card" aria-label="Pomodoro Timer">
       <!-- Mode Selectors -->
@@ -92,13 +165,12 @@
       <!-- Quick Duration Preset Chips -->
       <div class="preset-chips-container" aria-label="Quick duration presets">
         <span class="preset-label">Duration:</span>
-        <div id="presetChipsGroup" class="preset-chips">
-          <!-- Populated by JS for current mode, e.g. 15m, 25m, 45m, 50m, 60m, 90m -->
-        </div>
+        <div id="presetChipsGroup" class="preset-chips"></div>
       </div>
 
       <!-- Circular Countdown Display -->
-      <div class="countdown-wrapper">
+      <div class="countdown-wrapper" id="countdownWrapper">
+        <div class="pulse-glow" aria-hidden="true"></div>
         <svg class="progress-ring" viewBox="0 0 320 320" aria-hidden="true">
           <circle class="ring-bg" cx="160" cy="160" r="140" />
           <circle id="progressCircle" class="ring-indicator" cx="160" cy="160" r="140" />
@@ -115,7 +187,7 @@
 
       <!-- Timer Controls -->
       <div class="timer-controls">
-        <button id="resetBtn" class="control-btn secondary-btn" aria-label="Reset current session" data-tooltip="Reset session">
+        <button id="resetBtn" class="control-btn secondary-btn" aria-label="Reset current session" data-tooltip="Reset session (R)">
           <svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
             <path d="M3 3v5h5"></path>
@@ -123,7 +195,7 @@
           <span class="btn-label">Reset</span>
         </button>
 
-        <button id="startPauseBtn" class="control-btn primary-btn" aria-label="Start timer">
+        <button id="startPauseBtn" class="control-btn primary-btn" aria-label="Start timer (Space)">
           <svg id="playIcon" class="control-icon" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
@@ -134,7 +206,7 @@
           <span id="startPauseLabel" class="btn-label">Start</span>
         </button>
 
-        <button id="skipBtn" class="control-btn secondary-btn" aria-label="Skip to next session" data-tooltip="Skip session">
+        <button id="skipBtn" class="control-btn secondary-btn" aria-label="Skip to next session" data-tooltip="Skip session (S)">
           <svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="5 4 15 12 5 20 5 4" fill="currentColor"></polygon>
             <line x1="19" y1="5" x2="19" y2="19"></line>
@@ -343,6 +415,47 @@
           <button type="submit" class="btn primary-action-btn">Save Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div id="shortcutsModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="shortcutsModalTitle">
+    <div class="modal-card shortcuts-card">
+      <div class="modal-header">
+        <h3 id="shortcutsModalTitle" class="modal-title">Keyboard Shortcuts</h3>
+        <button id="closeShortcutsBtn" class="icon-btn close-btn" aria-label="Close shortcuts modal">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body shortcuts-list">
+        <div class="shortcut-item">
+          <span class="shortcut-desc">Start or pause timer</span>
+          <kbd class="shortcut-key">Space</kbd>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-desc">Reset current session</span>
+          <kbd class="shortcut-key">R</kbd>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-desc">Skip to next session</span>
+          <kbd class="shortcut-key">S</kbd>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-desc">Toggle Zen focus mode</span>
+          <kbd class="shortcut-key">F</kbd>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-desc">Toggle sound on / off</span>
+          <kbd class="shortcut-key">M</kbd>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-desc">Close open modal</span>
+          <kbd class="shortcut-key">Esc</kbd>
+        </div>
+      </div>
     </div>
   </div>
 
