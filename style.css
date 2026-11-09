@@ -27,8 +27,8 @@
   --accent-subtle: var(--color-focus-subtle);
 
   /* Neutrals & Surfaces */
-  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
-  --card-hover-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.07);
+  --card-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  --card-hover-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.07);
   --modal-backdrop: rgba(0, 0, 0, 0.4);
   --modal-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
   
@@ -40,8 +40,8 @@
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --radius-xs: 4px;
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
   --radius-full: 9999px;
   --transition-fast: 180ms ease;
   --transition-normal: 250ms ease;
@@ -62,8 +62,8 @@
   --color-long-break: #4EA8DE;
   --color-long-break-subtle: rgba(78, 168, 222, 0.2);
 
-  --card-shadow: 0 4px 25px -2px rgba(0, 0, 0, 0.35);
-  --card-hover-shadow: 0 8px 32px -2px rgba(0, 0, 0, 0.45);
+  --card-shadow: 0 4px 22px -2px rgba(0, 0, 0, 0.35);
+  --card-hover-shadow: 0 8px 28px -2px rgba(0, 0, 0, 0.45);
   --modal-backdrop: rgba(0, 0, 0, 0.7);
   --modal-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6);
 
@@ -106,7 +106,7 @@ body {
   font-family: var(--font-family);
   background-color: var(--bg-color);
   color: var(--text-main);
-  line-height: 1.5;
+  line-height: 1.45;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -133,28 +133,29 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   App Header
+   App Header - Compact & Clean
    -------------------------------------------------------------------------- */
 .app-header {
-  height: 70px;
+  height: clamp(52px, 6.5vh, 60px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 clamp(1rem, 5vw, 2.5rem);
+  padding: 0 clamp(1rem, 4vw, 2.5rem);
   border-bottom: 1px solid var(--border-color);
   background-color: var(--card-bg);
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
+  flex-shrink: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .logo-mark {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm);
   background: var(--color-focus-subtle);
   color: var(--color-focus);
@@ -169,8 +170,8 @@ body {
 }
 
 .tomato-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .logo-text {
@@ -179,15 +180,15 @@ body {
 }
 
 .brand-title {
-  font-size: 1.125rem;
+  font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-main);
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .brand-subtitle {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   font-weight: 400;
 }
@@ -195,14 +196,14 @@ body {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 /* Icon Buttons with Tooltips */
 .icon-btn {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
@@ -230,8 +231,8 @@ body {
 }
 
 .icon-btn .icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   stroke-width: 2;
 }
 
@@ -242,14 +243,14 @@ body {
 [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: -32px;
+  bottom: -30px;
   left: 50%;
   transform: translateX(-50%) translateY(4px);
   background: var(--text-main);
   color: var(--card-bg);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 500;
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: 4px;
   white-space: nowrap;
   pointer-events: none;
@@ -267,17 +268,18 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   App Main Layout
+   App Main Layout - Single View Responsive Desktop
    -------------------------------------------------------------------------- */
 .app-main {
   flex: 1;
   width: 100%;
-  max-width: 580px;
+  max-width: 530px;
   margin: 0 auto;
-  padding: 2rem 1.25rem 3rem;
+  padding: clamp(0.75rem, 1.8vh, 1.4rem) 1.15rem clamp(0.85rem, 1.8vh, 1.4rem);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: clamp(0.65rem, 1.5vh, 1rem);
+  justify-content: center;
 }
 
 /* --------------------------------------------------------------------------
@@ -285,21 +287,21 @@ body {
    -------------------------------------------------------------------------- */
 .hero-section {
   text-align: center;
-  padding: 0.25rem 0 0.25rem;
+  padding: 0;
 }
 
 .hero-title {
-  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-size: clamp(1.25rem, 2.5vh, 1.6rem);
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--text-main);
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .hero-subtitle {
-  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  font-size: clamp(0.78rem, 1.5vh, 0.88rem);
   color: var(--text-muted);
-  margin-top: 0.35rem;
+  margin-top: 0.2rem;
   font-weight: 400;
 }
 
@@ -309,20 +311,20 @@ body {
 .card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--card-shadow);
   transition: background-color var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
 }
 
 /* --------------------------------------------------------------------------
-   Timer Card
+   Timer Card (Center Box) - Optimized & Compact
    -------------------------------------------------------------------------- */
 .timer-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
-  padding: 1.75rem 1.5rem 1.5rem;
+  padding: clamp(0.9rem, 1.8vh, 1.35rem) clamp(1rem, 2.5vw, 1.4rem) clamp(0.75rem, 1.5vh, 1.1rem);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -335,11 +337,11 @@ body {
   display: flex;
   align-items: center;
   background-color: var(--bg-color);
-  padding: 4px;
+  padding: 3px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border-color);
   gap: 2px;
-  margin-bottom: 1rem;
+  margin-bottom: clamp(0.45rem, 1vh, 0.75rem);
   max-width: 100%;
 }
 
@@ -347,10 +349,10 @@ body {
   background: transparent;
   border: none;
   font-family: inherit;
-  font-size: 0.875rem;
+  font-size: 0.825rem;
   font-weight: 500;
   color: var(--text-muted);
-  padding: 8px 16px;
+  padding: 5px 14px;
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast);
@@ -365,7 +367,7 @@ body {
   background-color: var(--card-bg);
   color: var(--accent-color);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .mode-tab:focus-visible {
@@ -377,14 +379,14 @@ body {
 .preset-chips-container {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  gap: 0.4rem;
+  margin-bottom: clamp(0.45rem, 1vh, 0.75rem);
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .preset-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.02em;
@@ -393,7 +395,7 @@ body {
 .preset-chips {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -403,9 +405,9 @@ body {
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   font-family: inherit;
-  font-size: 0.775rem;
+  font-size: 0.74rem;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -429,15 +431,15 @@ body {
   outline-offset: 1px;
 }
 
-/* Circular Countdown */
+/* Circular Countdown - Scaled down for desktop sightline */
 .countdown-wrapper {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: clamp(190px, 23vh, 230px);
+  height: clamp(190px, 23vh, 230px);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: clamp(0.35rem, 0.8vh, 0.6rem);
 }
 
 .progress-ring {
@@ -452,14 +454,14 @@ body {
 .ring-bg {
   fill: none;
   stroke: var(--ring-track);
-  stroke-width: 10;
+  stroke-width: 9;
   transition: stroke var(--transition-normal);
 }
 
 .ring-indicator {
   fill: none;
   stroke: var(--accent-color);
-  stroke-width: 10;
+  stroke-width: 9;
   stroke-linecap: round;
   stroke-dasharray: 879.64; /* 2 * PI * 140 */
   stroke-dashoffset: 0;
@@ -476,7 +478,7 @@ body {
 }
 
 .time-text {
-  font-size: 4.25rem;
+  font-size: clamp(2.85rem, 5.2vh, 3.6rem);
   font-weight: 700;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
@@ -486,12 +488,12 @@ body {
 
 /* Motivational Quote */
 .mode-message {
-  font-size: 0.95rem;
+  font-size: clamp(0.82rem, 1.4vh, 0.9rem);
   color: var(--text-muted);
   font-weight: 500;
   text-align: center;
-  min-height: 1.5rem;
-  margin-bottom: 1.5rem;
+  min-height: 1.25rem;
+  margin-bottom: clamp(0.6rem, 1.4vh, 1rem);
   transition: color var(--transition-normal);
 }
 
@@ -500,8 +502,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1.75rem;
+  gap: 0.85rem;
+  margin-bottom: clamp(0.75rem, 1.4vh, 1.15rem);
   width: 100%;
 }
 
@@ -509,7 +511,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   font-family: inherit;
   border-radius: var(--radius-full);
   cursor: pointer;
@@ -525,17 +527,17 @@ body {
 .primary-btn {
   background-color: var(--accent-color);
   color: #FFFFFF;
-  padding: 14px 38px;
-  font-size: 1.1rem;
+  padding: 10px 30px;
+  font-size: 0.98rem;
   font-weight: 600;
-  min-width: 140px;
-  box-shadow: 0 4px 14px -2px var(--accent-subtle);
+  min-width: 124px;
+  box-shadow: 0 4px 12px -2px var(--accent-subtle);
 }
 
 .primary-btn:hover {
   transform: translateY(-2px);
   filter: brightness(1.06);
-  box-shadow: 0 8px 20px -2px var(--accent-subtle);
+  box-shadow: 0 8px 18px -2px var(--accent-subtle);
 }
 
 .primary-btn:active {
@@ -543,16 +545,16 @@ body {
 }
 
 .primary-btn .control-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .secondary-btn {
   background-color: var(--bg-color);
   color: var(--text-muted);
   border-color: var(--border-color);
-  padding: 12px 20px;
-  font-size: 0.9rem;
+  padding: 9px 16px;
+  font-size: 0.825rem;
   font-weight: 500;
 }
 
@@ -568,19 +570,19 @@ body {
 }
 
 .secondary-btn .control-icon {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 /* Session Progress Dots */
 .session-progress-section {
   width: 100%;
   border-top: 1px solid var(--border-color);
-  padding-top: 1.25rem;
+  padding-top: clamp(0.6rem, 1.2vh, 0.85rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.4rem;
 }
 
 .cycle-header {
@@ -588,11 +590,11 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 280px;
+  max-width: 250px;
 }
 
 .section-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text-muted);
@@ -602,7 +604,7 @@ body {
   background: none;
   border: none;
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
   cursor: pointer;
   text-decoration: underline;
@@ -616,13 +618,13 @@ body {
 
 .cycle-dots {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.65rem;
   align-items: center;
 }
 
 .dot {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   border: 2px solid var(--accent-color);
   background-color: transparent;
@@ -640,44 +642,44 @@ body {
 }
 
 .cycle-summary {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
 /* --------------------------------------------------------------------------
-   Daily Goal Card
+   Daily Goal Card - Compact
    -------------------------------------------------------------------------- */
 .goal-card {
-  padding: 1.25rem 1.5rem;
+  padding: clamp(0.7rem, 1.4vh, 0.95rem) 1.2rem;
 }
 
 .goal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.55rem;
 }
 
 .goal-title-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   color: var(--text-main);
 }
 
 .card-title {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 600;
 }
 
 .goal-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .goal-numbers {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--accent-color);
 }
@@ -685,17 +687,17 @@ body {
 .quick-counter-btns {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .counter-btn {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: var(--radius-xs);
   border: 1px solid var(--border-color);
   background: var(--bg-color);
   color: var(--text-main);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -713,11 +715,11 @@ body {
 
 .progress-track {
   width: 100%;
-  height: 8px;
+  height: 6px;
   background-color: var(--progress-track);
   border-radius: var(--radius-full);
   overflow: hidden;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .progress-fill {
@@ -728,29 +730,29 @@ body {
 }
 
 .goal-text {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
 /* --------------------------------------------------------------------------
-   Statistics Grid
+   Statistics Grid - Compact
    -------------------------------------------------------------------------- */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  gap: clamp(0.5rem, 1.2vw, 0.75rem);
 }
 
 .stat-card {
-  padding: 1.15rem 1rem;
+  padding: clamp(0.6rem, 1.2vh, 0.85rem) 0.85rem;
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.65rem;
 }
 
 .stat-icon-wrapper {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm);
   background: var(--bg-color);
   border: 1px solid var(--border-color);
@@ -769,7 +771,7 @@ body {
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   font-weight: 500;
   white-space: nowrap;
@@ -778,39 +780,40 @@ body {
 }
 
 .stat-value {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-main);
-  line-height: 1.25;
-  margin-top: 0.15rem;
+  line-height: 1.2;
+  margin-top: 0.1rem;
 }
 
 .small-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 /* --------------------------------------------------------------------------
-   App Footer
+   App Footer - Sleek
    -------------------------------------------------------------------------- */
 .app-footer {
   text-align: center;
-  padding: 2rem 1rem 2.5rem;
+  padding: clamp(0.75rem, 1.8vh, 1.25rem) 1rem;
   border-top: 1px solid var(--border-color);
   background-color: var(--bg-color);
   margin-top: auto;
+  flex-shrink: 0;
 }
 
 .footer-primary {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-main);
 }
 
 .footer-secondary {
-  font-size: 0.775rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -859,35 +862,35 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
+  padding: 1.15rem 1.35rem;
   border-bottom: 1px solid var(--border-color);
 }
 
 .modal-title {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-main);
 }
 
 .close-btn {
-  margin-right: -0.5rem;
+  margin-right: -0.4rem;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.35rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .settings-group {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .settings-group-title {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -898,14 +901,14 @@ body {
 .technique-presets-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.65rem;
+  gap: 0.55rem;
 }
 
 .technique-preset-btn {
   background: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  padding: 8px 10px;
   text-align: left;
   cursor: pointer;
   display: flex;
@@ -922,30 +925,30 @@ body {
 }
 
 .tech-name {
-  font-size: 0.85rem;
+  font-size: 0.825rem;
   font-weight: 600;
   color: var(--text-main);
 }
 
 .tech-desc {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
 .inputs-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .form-field label {
-  font-size: 0.825rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-main);
 }
@@ -953,8 +956,8 @@ body {
 .form-field input[type="number"],
 .form-field select {
   font-family: inherit;
-  font-size: 0.95rem;
-  padding: 9px 12px;
+  font-size: 0.9rem;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   background-color: var(--bg-color);
@@ -983,30 +986,30 @@ body {
 }
 
 .toggle-label {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
   color: var(--text-main);
   cursor: pointer;
 }
 
 .toggle-desc {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
 }
 
 .sound-controls-inline {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.55rem;
 }
 
 .pill-action-btn {
   background: var(--bg-color);
   border: 1px solid var(--border-color);
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: var(--radius-full);
   color: var(--text-main);
   cursor: pointer;
@@ -1022,8 +1025,8 @@ body {
 .switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 40px;
+  height: 22px;
   flex-shrink: 0;
 }
 
@@ -1045,8 +1048,8 @@ body {
 .slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
+  height: 16px;
+  width: 16px;
   left: 3px;
   bottom: 3px;
   background-color: #FFFFFF;
@@ -1065,22 +1068,22 @@ body {
 }
 
 .switch input:checked + .slider:before {
-  transform: translateX(20px);
+  transform: translateX(18px);
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  padding-top: 1rem;
+  gap: 0.65rem;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--border-color);
 }
 
 .btn {
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  padding: 10px 18px;
+  padding: 9px 16px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -1101,15 +1104,15 @@ body {
    -------------------------------------------------------------------------- */
 .toast-container {
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
+  bottom: 1.25rem;
+  right: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
   z-index: 2000;
   pointer-events: none;
-  max-width: 360px;
-  width: calc(100% - 3rem);
+  max-width: 340px;
+  width: calc(100% - 2.5rem);
 }
 
 .toast {
@@ -1119,11 +1122,11 @@ body {
   border-left: 4px solid var(--accent-color);
   border-radius: var(--radius-sm);
   box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.65rem;
   transform: translateY(16px);
   opacity: 0;
   animation: toastIn 0.25s forwards cubic-bezier(0.2, 0.9, 0.3, 1);
@@ -1134,10 +1137,10 @@ body {
 }
 
 .toast-message {
-  font-size: 0.85rem;
+  font-size: 0.825rem;
   font-weight: 500;
   color: var(--text-main);
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .toast-close-btn {
@@ -1172,48 +1175,40 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Responsive Design
+   Responsive Design (Mobile & Small screens)
    -------------------------------------------------------------------------- */
 @media (max-width: 640px) {
   .app-main {
-    padding: 1.5rem 1rem 2.5rem;
-    gap: 1.25rem;
+    padding: 1.15rem 1rem 2rem;
+    gap: 1rem;
+    justify-content: flex-start;
   }
 
   .countdown-wrapper {
-    width: 240px;
-    height: 240px;
+    width: 200px;
+    height: 200px;
   }
 
   .time-text {
-    font-size: 3.5rem;
+    font-size: 3.1rem;
   }
 
   .timer-card {
-    padding: 1.25rem 1rem 1.25rem;
+    padding: 1.15rem 1rem 1rem;
   }
 
   .mode-tab {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-  }
-
-  .preset-chips-container {
-    margin-bottom: 0.85rem;
-  }
-
-  .preset-chip {
-    padding: 3px 8px;
-    font-size: 0.72rem;
+    padding: 5px 10px;
+    font-size: 0.78rem;
   }
 
   .stats-grid {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 0.6rem;
   }
 
   .stat-card {
-    padding: 1rem 1.15rem;
+    padding: 0.85rem 1rem;
   }
 
   .inputs-grid {
@@ -1235,21 +1230,21 @@ body {
 
 @media (max-width: 380px) {
   .countdown-wrapper {
-    width: 210px;
-    height: 210px;
+    width: 180px;
+    height: 180px;
   }
 
   .time-text {
-    font-size: 3rem;
+    font-size: 2.75rem;
   }
 
   .primary-btn {
-    padding: 12px 24px;
-    min-width: 120px;
+    padding: 9px 20px;
+    min-width: 110px;
   }
 
   .secondary-btn {
-    padding: 10px 14px;
+    padding: 8px 12px;
   }
 }
 
