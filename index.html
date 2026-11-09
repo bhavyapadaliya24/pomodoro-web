@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro — Make time count</title>
+  <meta name="description" content="A calm, minimal, and aesthetic Pomodoro study timer to boost productivity and focus.">
+  <meta name="theme-color" content="#F8F7F4">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-mark" aria-hidden="true">
+        <!-- Minimal Tomato SVG -->
+        <svg class="tomato-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4" />
+          <path d="M8 4c2 .5 4 .5 8 0" />
+          <path d="M12 6c-4.4 0-8 3.6-8 8a8 8 0 0 0 16 0c0-4.4-3.6-8-8-8z" fill="currentColor" fill-opacity="0.12" />
+        </svg>
+      </div>
+      <div class="logo-text">
+        <h1 class="brand-title">Pomodoro</h1>
+        <span class="brand-subtitle">Make time count.</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button id="soundToggleBtn" class="icon-btn" aria-label="Toggle notification sound" data-tooltip="Sound: On">
+        <svg id="soundIconOn" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+        <svg id="soundIconOff" class="icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+      </button>
+
+      <button id="themeToggleBtn" class="icon-btn" aria-label="Toggle dark mode" data-tooltip="Switch theme">
+        <svg id="themeIconSun" class="icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="themeIconMoon" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+
+      <button id="settingsBtn" class="icon-btn" aria-label="Open settings" data-tooltip="Settings">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-main">
+    <!-- Hero Title -->
+    <section class="hero-section">
+      <h2 class="hero-title">Make space for focus.</h2>
+      <p class="hero-subtitle">Small sessions. Big progress.</p>
+    </section>
+
+    <!-- Timer Card -->
+    <section class="timer-card" aria-label="Pomodoro Timer">
+      <!-- Mode Selectors -->
+      <nav class="mode-tabs" role="tablist" aria-label="Session modes">
+        <button id="modeFocus" class="mode-tab active" role="tab" aria-selected="true" data-mode="focus">Focus</button>
+        <button id="modeShortBreak" class="mode-tab" role="tab" aria-selected="false" data-mode="shortBreak">Short Break</button>
+        <button id="modeLongBreak" class="mode-tab" role="tab" aria-selected="false" data-mode="longBreak">Long Break</button>
+      </nav>
+
+      <!-- Circular Countdown Display -->
+      <div class="countdown-wrapper">
+        <svg class="progress-ring" viewBox="0 0 320 320" aria-hidden="true">
+          <circle class="ring-bg" cx="160" cy="160" r="140" />
+          <circle id="progressCircle" class="ring-indicator" cx="160" cy="160" r="140" />
+        </svg>
+
+        <div class="time-display-box">
+          <span id="timeDisplay" class="time-text" aria-live="polite">25:00</span>
+          <span id="timerStatus" class="sr-only">Timer paused</span>
+        </div>
+      </div>
+
+      <!-- Motivational Quote -->
+      <p id="modeMessage" class="mode-message">Stay focused. You've got this.</p>
+
+      <!-- Timer Controls -->
+      <div class="timer-controls">
+        <button id="resetBtn" class="control-btn secondary-btn" aria-label="Reset current session" data-tooltip="Reset">
+          <svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          <span class="btn-label">Reset</span>
+        </button>
+
+        <button id="startPauseBtn" class="control-btn primary-btn" aria-label="Start timer">
+          <svg id="playIcon" class="control-icon" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <svg id="pauseIcon" class="control-icon hidden" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+            <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+          </svg>
+          <span id="startPauseLabel" class="btn-label">Start</span>
+        </button>
+
+        <button id="skipBtn" class="control-btn secondary-btn" aria-label="Skip to next session" data-tooltip="Skip">
+          <svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 4 15 12 5 20 5 4" fill="currentColor"></polygon>
+            <line x1="19" y1="5" x2="19" y2="19"></line>
+          </svg>
+          <span class="btn-label">Skip</span>
+        </button>
+      </div>
+
+      <!-- Session Progress in current cycle -->
+      <div class="session-progress-section">
+        <span class="section-label">TODAY'S SESSIONS</span>
+        <div id="cycleDots" class="cycle-dots" aria-label="Current 4-session cycle progress">
+          <span class="dot" title="Session 1"></span>
+          <span class="dot" title="Session 2"></span>
+          <span class="dot" title="Session 3"></span>
+          <span class="dot" title="Session 4"></span>
+        </div>
+        <p id="cycleSummaryText" class="cycle-summary">0 of 4 focus sessions completed.</p>
+      </div>
+    </section>
+
+    <!-- Daily Goal Card -->
+    <section class="card goal-card">
+      <div class="goal-header">
+        <div class="goal-title-group">
+          <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="6"></circle>
+            <circle cx="12" cy="12" r="2"></circle>
+          </svg>
+          <h3 class="card-title">Today's Focus Goal</h3>
+        </div>
+        <span id="goalCountDisplay" class="goal-numbers">0 / 4 sessions</span>
+      </div>
+
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="goalProgressBarContainer">
+        <div id="goalProgressBar" class="progress-fill" style="width: 0%;"></div>
+      </div>
+
+      <p id="goalMotivationalText" class="goal-text">4 more sessions to reach your goal.</p>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-grid" aria-label="Statistics">
+      <div class="card stat-card">
+        <div class="stat-icon-wrapper">
+          <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Focus Time</span>
+          <span id="statFocusTime" class="stat-value">0m</span>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon-wrapper">
+          <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Completed Sessions</span>
+          <span id="statSessionsCount" class="stat-value">0</span>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-icon-wrapper">
+          <svg class="small-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Daily Goal Progress</span>
+          <span id="statGoalProgress" class="stat-value">0%</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <p class="footer-primary">Pomodoro — Make time count.</p>
+    <p class="footer-secondary">Designed for better focus and productive days.</p>
+  </footer>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="settingsModalTitle" class="modal-title">Settings</h3>
+        <button id="closeSettingsBtn" class="icon-btn close-btn" aria-label="Close settings modal">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="settingsForm" class="modal-body">
+        <div class="settings-group">
+          <h4 class="settings-group-title">Timer Durations (minutes)</h4>
+          <div class="inputs-grid">
+            <div class="form-field">
+              <label for="focusDurationInput">Focus</label>
+              <input type="number" id="focusDurationInput" min="1" max="120" value="25" required>
+            </div>
+            <div class="form-field">
+              <label for="shortBreakInput">Short Break</label>
+              <input type="number" id="shortBreakInput" min="1" max="60" value="5" required>
+            </div>
+            <div class="form-field">
+              <label for="longBreakInput">Long Break</label>
+              <input type="number" id="longBreakInput" min="1" max="60" value="15" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h4 class="settings-group-title">Daily Goal</h4>
+          <div class="form-field single-field">
+            <label for="dailyGoalInput">Target focus sessions per day</label>
+            <input type="number" id="dailyGoalInput" min="1" max="30" value="4" required>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h4 class="settings-group-title">Preferences</h4>
+          <div class="toggle-field">
+            <div class="toggle-text">
+              <label for="soundPrefCheckbox" class="toggle-label">Notification Sound</label>
+              <span class="toggle-desc">Play a gentle chime when a session finishes</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="soundPrefCheckbox" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-field">
+            <div class="toggle-text">
+              <label for="autoSwitchPrefCheckbox" class="toggle-label">Auto-start Next Session</label>
+              <span class="toggle-desc">Automatically start timer when current session ends</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="autoSwitchPrefCheckbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="form-field select-field">
+            <label for="themeSelect">Theme Preference</label>
+            <select id="themeSelect">
+              <option value="system">System Default</option>
+              <option value="light">Light Theme</option>
+              <option value="dark">Dark Theme</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelSettingsBtn" class="btn secondary-btn">Cancel</button>
+          <button type="submit" class="btn primary-action-btn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
