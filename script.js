@@ -1,13 +1,13 @@
 /**
  * Pomodoro Web Application
- * Minimal, aesthetic, and fully functional Pomodoro Study Timer.
+ * Minimal, aesthetic, and fully functional Pomodoro & Deep Work Study Timer.
  */
 
 // ==========================================================================
 // Default State & Configuration
 // ==========================================================================
 const DEFAULT_SETTINGS = {
-  focusDuration: 25,       // in minutes
+  focusDuration: 25,       // in minutes (supports 15, 25, 45, 50, 60, 90, etc.)
   shortBreakDuration: 5,   // in minutes
   longBreakDuration: 15,   // in minutes
   dailyGoal: 4,            // target focus sessions
@@ -19,15 +19,18 @@ const DEFAULT_SETTINGS = {
 const MODE_CONFIG = {
   focus: {
     name: 'Focus',
-    message: "Stay focused. You've got this."
+    message: "Stay focused. You've got this.",
+    presets: [15, 25, 45, 50, 60, 90]
   },
   shortBreak: {
     name: 'Short Break',
-    message: "Take a breath. You've earned it."
+    message: "Take a breath. You've earned it.",
+    presets: [3, 5, 10, 15]
   },
   longBreak: {
     name: 'Long Break',
-    message: "Relax and recharge."
+    message: "Relax and recharge.",
+    presets: [15, 20, 25, 30]
   }
 };
 
@@ -60,6 +63,7 @@ const timeDisplay = document.getElementById('timeDisplay');
 const timerStatus = document.getElementById('timerStatus');
 const progressCircle = document.getElementById('progressCircle');
 const modeMessage = document.getElementById('modeMessage');
+const presetChipsGroup = document.getElementById('presetChipsGroup');
 const startPauseBtn = document.getElementById('startPauseBtn');
 const startPauseLabel = document.getElementById('startPauseLabel');
 const playIcon = document.getElementById('playIcon');
@@ -76,10 +80,13 @@ const modeTabs = {
 // Progress & Goal Elements
 const cycleDotsContainer = document.getElementById('cycleDots');
 const cycleSummaryText = document.getElementById('cycleSummaryText');
+const resetCycleBtn = document.getElementById('resetCycleBtn');
 const goalCountDisplay = document.getElementById('goalCountDisplay');
 const goalProgressBar = document.getElementById('goalProgressBar');
 const goalProgressBarContainer = document.getElementById('goalProgressBarContainer');
 const goalMotivationalText = document.getElementById('goalMotivationalText');
+const manualIncrementSessionBtn = document.getElementById('manualIncrementSessionBtn');
+const manualDecrementSessionBtn = document.getElementById('manualDecrementSessionBtn');
 
 // Statistics Elements
 const statFocusTime = document.getElementById('statFocusTime');
@@ -107,6 +114,8 @@ const dailyGoalInput = document.getElementById('dailyGoalInput');
 const soundPrefCheckbox = document.getElementById('soundPrefCheckbox');
 const autoSwitchPrefCheckbox = document.getElementById('autoSwitchPrefCheckbox');
 const themeSelect = document.getElementById('themeSelect');
+const testSoundBtn = document.getElementById('testSoundBtn');
+const techniquePresetBtns = document.querySelectorAll('.technique-preset-btn');
 
 // Toast Notification Container
 const toastContainer = document.getElementById('toastContainer');
@@ -119,13 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDailyProgress();
   initTheme();
   setupSVGProgressRing();
+  renderPresetChips();
   resetTimer(false);
   updateStatistics();
   updateCycleProgressDisplay();
   attachEventListeners();
 });
 
-// Setup progress ring initial stroke-dasharray and offset
 function setupSVGProgressRing() {
   if (progressCircle) {
     progressCircle.style.strokeDasharray = `${RING_CIRCUMFERENCE}`;
@@ -145,20 +154,15 @@ function startTimer() {
   if (timerState.isRunning) return;
 
   timerState.isRunning = true;
-  // Calculate target end timestamp
   timerState.endTime = Date.now() + timerState.remainingSeconds * 1000;
 
-  // Visual button state
   updateControlsState(true);
   timerStatus.textContent = 'Timer running';
 
-  // Immediate update
   tick();
 
-  // Clear any existing interval to prevent duplicates
   if (timerState.timerInterval) clearInterval(timerState.timerInterval);
 
-  // Set recurring interval for ticking
   timerState.timerInterval = setInterval(() => {
     tick();
   }, 250);
@@ -176,7 +180,6 @@ function pauseTimer() {
     timerState.timerInterval = null;
   }
 
-  // Calculate remaining seconds from timestamp before pausing
   if (timerState.endTime) {
     const msRemaining = Math.max(0, timerState.endTime - Date.now());
     timerState.remainingSeconds = Math.ceil(msRemaining / 1000);
@@ -202,9 +205,10 @@ function resetTimer(notify = true) {
 
   updateTimerDisplay();
   updateProgressRing();
+  highlightActivePresetChip();
 
   if (notify) {
-    showToast(`${MODE_CONFIG[timerState.currentMode].name} timer reset.`);
+    showToast(`${MODE_CONFIG[timerState.currentMode].name} timer reset to ${durationMinutes}m.`);
   }
 }
 
@@ -246,7 +250,6 @@ function completeSession() {
   playNotificationSound();
 
   if (finishedMode === 'focus') {
-    // Record focus stats
     dailyProgress.completedSessions += 1;
     dailyProgress.totalFocusSeconds += timerState.totalSeconds;
     timerState.cycleCount = (timerState.cycleCount + 1) % 4;
@@ -257,7 +260,6 @@ function completeSession() {
 
     showToast('Focus session completed! Great work.');
 
-    // Check if daily goal reached
     if (dailyProgress.completedSessions === appSettings.dailyGoal) {
       setTimeout(() => {
         showToast("🎉 Congratulations! You've reached today's focus goal.");
@@ -267,34 +269,29 @@ function completeSession() {
     showToast(`${MODE_CONFIG[finishedMode].name} finished. Ready to focus again?`);
   }
 
-  // Advance to next session according to the Pomodoro cycle
   advanceCycle(true);
 }
 
 /**
  * Advances the Pomodoro technique sequence:
- * Focus (1) -> Short Break (1) -> Focus (2) -> Short Break (2) ->
- * Focus (3) -> Short Break (3) -> Focus (4) -> Long Break -> Repeat
- * @param {boolean} completedNaturally - Whether session finished naturally
+ * Focus (1) -> Short Break -> Focus (2) -> Short Break ->
+ * Focus (3) -> Short Break -> Focus (4) -> Long Break -> Repeat
  */
 function advanceCycle(completedNaturally = false) {
   let nextMode = 'focus';
 
   if (timerState.currentMode === 'focus') {
-    // If just finished the 4th focus session (cycleCount is 0 now because 4 % 4 = 0)
     if (timerState.cycleCount === 0 && completedNaturally) {
       nextMode = 'longBreak';
     } else {
       nextMode = 'shortBreak';
     }
   } else {
-    // After either break, go back to Focus
     nextMode = 'focus';
   }
 
   switchMode(nextMode, false);
 
-  // If auto-start is enabled and session completed naturally, start immediately
   if (appSettings.autoStart && completedNaturally) {
     startTimer();
   }
@@ -302,8 +299,6 @@ function advanceCycle(completedNaturally = false) {
 
 /**
  * Switches between Focus, Short Break, and Long Break modes.
- * @param {string} mode - 'focus' | 'shortBreak' | 'longBreak'
- * @param {boolean} userInitiated - true if user clicked mode tab
  */
 function switchMode(mode, userInitiated = true) {
   if (!MODE_CONFIG[mode]) return;
@@ -311,7 +306,7 @@ function switchMode(mode, userInitiated = true) {
   pauseTimer();
   timerState.currentMode = mode;
 
-  // Update mode tabs active class
+  // Update tabs active state
   Object.keys(modeTabs).forEach(key => {
     const tab = modeTabs[key];
     const isActive = key === mode;
@@ -319,13 +314,13 @@ function switchMode(mode, userInitiated = true) {
     tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
 
-  // Update theme accent attribute on body
+  // Update current mode on body for dynamic accent styling
   document.body.setAttribute('data-current-mode', mode);
-
-  // Update message
   modeMessage.textContent = MODE_CONFIG[mode].message;
 
-  // Set duration & reset countdown
+  // Render preset chips for this mode
+  renderPresetChips();
+
   const duration = getDurationForMode(mode);
   timerState.totalSeconds = duration * 60;
   timerState.remainingSeconds = timerState.totalSeconds;
@@ -335,7 +330,7 @@ function switchMode(mode, userInitiated = true) {
   updateProgressRing();
 
   if (userInitiated) {
-    showToast(`Switched to ${MODE_CONFIG[mode].name} mode.`);
+    showToast(`Switched to ${MODE_CONFIG[mode].name} mode (${duration}m).`);
   }
 }
 
@@ -352,13 +347,85 @@ function getDurationForMode(mode) {
   }
 }
 
+function setDurationForMode(mode, minutes) {
+  switch (mode) {
+    case 'focus':
+      appSettings.focusDuration = minutes;
+      break;
+    case 'shortBreak':
+      appSettings.shortBreakDuration = minutes;
+      break;
+    case 'longBreak':
+      appSettings.longBreakDuration = minutes;
+      break;
+  }
+  saveSettings();
+}
+
+// ==========================================================================
+// Preset Chips Management
+// ==========================================================================
+
+/**
+ * Renders the quick duration preset chips for the active mode.
+ */
+function renderPresetChips() {
+  if (!presetChipsGroup) return;
+
+  presetChipsGroup.innerHTML = '';
+  const currentMode = timerState.currentMode;
+  const presets = MODE_CONFIG[currentMode].presets || [25];
+  const activeDuration = getDurationForMode(currentMode);
+
+  presets.forEach(mins => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = `preset-chip ${mins === activeDuration ? 'active' : ''}`;
+    chip.setAttribute('data-minutes', mins);
+    chip.textContent = `${mins}m`;
+    chip.setAttribute('title', `Set ${MODE_CONFIG[currentMode].name} duration to ${mins} minutes`);
+
+    chip.addEventListener('click', () => {
+      selectDurationPreset(mins);
+    });
+
+    presetChipsGroup.appendChild(chip);
+  });
+}
+
+/**
+ * Handles clicking a quick duration preset chip.
+ */
+function selectDurationPreset(minutes) {
+  setDurationForMode(timerState.currentMode, minutes);
+  highlightActivePresetChip();
+
+  pauseTimer();
+  timerState.totalSeconds = minutes * 60;
+  timerState.remainingSeconds = timerState.totalSeconds;
+  timerState.endTime = null;
+
+  updateTimerDisplay();
+  updateProgressRing();
+
+  showToast(`Timer set to ${minutes} min for ${MODE_CONFIG[timerState.currentMode].name}.`);
+}
+
+function highlightActivePresetChip() {
+  if (!presetChipsGroup) return;
+  const activeDuration = getDurationForMode(timerState.currentMode);
+  const chips = presetChipsGroup.querySelectorAll('.preset-chip');
+
+  chips.forEach(chip => {
+    const mins = parseInt(chip.getAttribute('data-minutes'), 10);
+    chip.classList.toggle('active', mins === activeDuration);
+  });
+}
+
 // ==========================================================================
 // Display & UI Updates
 // ==========================================================================
 
-/**
- * Updates the time numbers (MM:SS) and document title.
- */
 function updateTimerDisplay() {
   const minutes = Math.floor(timerState.remainingSeconds / 60);
   const seconds = timerState.remainingSeconds % 60;
@@ -368,9 +435,6 @@ function updateTimerDisplay() {
   document.title = `${formatted} — ${MODE_CONFIG[timerState.currentMode].name} | Pomodoro`;
 }
 
-/**
- * Updates the SVG circular progress bar.
- */
 function updateProgressRing() {
   if (!progressCircle) return;
 
@@ -382,9 +446,6 @@ function updateProgressRing() {
   progressCircle.style.strokeDashoffset = `${offset}`;
 }
 
-/**
- * Updates Start/Pause button appearance and accessibility.
- */
 function updateControlsState(isRunning) {
   if (isRunning) {
     playIcon.classList.add('hidden');
@@ -399,9 +460,6 @@ function updateControlsState(isRunning) {
   }
 }
 
-/**
- * Updates the session dots for the current 4-session cycle.
- */
 function updateCycleProgressDisplay() {
   const dots = cycleDotsContainer.querySelectorAll('.dot');
   const count = timerState.cycleCount;
@@ -413,14 +471,9 @@ function updateCycleProgressDisplay() {
   cycleSummaryText.textContent = `${count} of 4 focus sessions completed.`;
 }
 
-/**
- * Updates statistics and daily goal cards.
- */
 function updateStatistics() {
-  // Check date rollover
   checkDateRollover();
 
-  // 1. Total Focus Time formatted
   const totalSeconds = dailyProgress.totalFocusSeconds;
   const hours = Math.floor(totalSeconds / 3600);
   const mins = Math.floor((totalSeconds % 3600) / 60);
@@ -435,16 +488,13 @@ function updateStatistics() {
   }
   statFocusTime.textContent = formattedTime;
 
-  // 2. Completed Sessions Count
   const completed = dailyProgress.completedSessions;
   statSessionsCount.textContent = completed;
 
-  // 3. Goal Progress %
   const target = Math.max(1, appSettings.dailyGoal);
   const percent = Math.min(100, Math.round((completed / target) * 100));
   statGoalProgress.textContent = `${percent}%`;
 
-  // Goal Card UI
   goalCountDisplay.textContent = `${completed} / ${target} sessions`;
   goalProgressBar.style.width = `${percent}%`;
   goalProgressBarContainer.setAttribute('aria-valuenow', percent);
@@ -522,8 +572,8 @@ function handleSaveSettings(event) {
   saveSettings();
   applyTheme(appSettings.theme);
   updateSoundIconUI();
+  renderPresetChips();
 
-  // If timer is not currently running, apply new duration immediately
   if (!timerState.isRunning) {
     const currentDuration = getDurationForMode(timerState.currentMode);
     timerState.totalSeconds = currentDuration * 60;
@@ -586,7 +636,6 @@ function saveDailyProgress() {
 function initTheme() {
   applyTheme(appSettings.theme);
 
-  // Listen to system theme changes if set to system
   if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
       if (appSettings.theme === 'system') {
@@ -603,7 +652,6 @@ function applyTheme(themeChoice) {
   } else if (themeChoice === 'light') {
     isDark = false;
   } else {
-    // system preference
     isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
@@ -633,10 +681,6 @@ function toggleTheme() {
 // Sound & Notifications (Web Audio API)
 // ==========================================================================
 
-/**
- * Plays a calm, gentle harmonic bell chime synthesized via Web Audio API.
- * 100% self-contained, zero external audio files needed, works offline.
- */
 function playNotificationSound() {
   if (!appSettings.soundEnabled) return;
 
@@ -645,9 +689,7 @@ function playNotificationSound() {
     if (!AudioContextClass) return;
 
     const ctx = new AudioContextClass();
-
-    // Gentle chord frequencies: C5, E5, G5
-    const frequencies = [523.25, 659.25, 783.99];
+    const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
 
     frequencies.forEach((freq, index) => {
       const osc = ctx.createOscillator();
@@ -656,7 +698,6 @@ function playNotificationSound() {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-      // Stagger notes slightly for a gentle marimba/bell roll
       const startTime = ctx.currentTime + index * 0.08;
       const duration = 1.4;
 
@@ -726,10 +767,7 @@ function showToast(message, duration = 4000) {
   };
 
   toast.querySelector('.toast-close-btn').addEventListener('click', dismiss);
-
   toastContainer.appendChild(toast);
-
-  // Auto remove after duration
   setTimeout(dismiss, duration);
 }
 
@@ -768,17 +806,83 @@ function attachEventListeners() {
   modeTabs.shortBreak.addEventListener('click', () => switchMode('shortBreak', true));
   modeTabs.longBreak.addEventListener('click', () => switchMode('longBreak', true));
 
+  // Cycle Dots (Click to set session cycle step directly)
+  const dots = cycleDotsContainer.querySelectorAll('.dot');
+  dots.forEach(dot => {
+    dot.addEventListener('click', (e) => {
+      const index = parseInt(dot.getAttribute('data-index'), 10);
+      // Toggle or set count to index + 1
+      timerState.cycleCount = (timerState.cycleCount === index + 1) ? index : index + 1;
+      updateCycleProgressDisplay();
+      showToast(`Cycle progress set to ${timerState.cycleCount} of 4.`);
+    });
+  });
+
+  // Reset Cycle Button
+  if (resetCycleBtn) {
+    resetCycleBtn.addEventListener('click', () => {
+      timerState.cycleCount = 0;
+      updateCycleProgressDisplay();
+      showToast('Cycle reset to 0 of 4.');
+    });
+  }
+
+  // Daily Goal manual increment / decrement
+  if (manualIncrementSessionBtn) {
+    manualIncrementSessionBtn.addEventListener('click', () => {
+      dailyProgress.completedSessions += 1;
+      dailyProgress.totalFocusSeconds += (appSettings.focusDuration * 60);
+      saveDailyProgress();
+      updateStatistics();
+      showToast('+1 focus session logged manually.');
+    });
+  }
+
+  if (manualDecrementSessionBtn) {
+    manualDecrementSessionBtn.addEventListener('click', () => {
+      if (dailyProgress.completedSessions > 0) {
+        dailyProgress.completedSessions -= 1;
+        dailyProgress.totalFocusSeconds = Math.max(0, dailyProgress.totalFocusSeconds - (appSettings.focusDuration * 60));
+        saveDailyProgress();
+        updateStatistics();
+        showToast('-1 focus session removed.');
+      }
+    });
+  }
+
   // Header Buttons
   themeToggleBtn.addEventListener('click', toggleTheme);
   soundToggleBtn.addEventListener('click', toggleSound);
   settingsBtn.addEventListener('click', openSettingsModal);
+
+  // Settings Presets buttons
+  techniquePresetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const focus = btn.getAttribute('data-focus');
+      const short = btn.getAttribute('data-short');
+      const long = btn.getAttribute('data-long');
+
+      focusDurationInput.value = focus;
+      shortBreakInput.value = short;
+      longBreakInput.value = long;
+
+      showToast(`Preset loaded: ${focus}m Focus, ${short}m Short Break, ${long}m Long Break`);
+    });
+  });
+
+  // Test Sound Button in Settings
+  if (testSoundBtn) {
+    testSoundBtn.addEventListener('click', () => {
+      playNotificationSound();
+      showToast('Playing preview notification chime 🔔');
+    });
+  }
 
   // Modal Controls
   closeSettingsBtn.addEventListener('click', closeSettingsModal);
   cancelSettingsBtn.addEventListener('click', closeSettingsModal);
   settingsForm.addEventListener('submit', handleSaveSettings);
 
-  // Close modal when clicking outside of modal-card
   settingsModal.addEventListener('click', (e) => {
     if (e.target === settingsModal) {
       closeSettingsModal();
@@ -787,13 +891,11 @@ function attachEventListeners() {
 
   // Keyboard navigation
   document.addEventListener('keydown', (e) => {
-    // If modal is open, Escape closes it
     if (e.key === 'Escape' && !settingsModal.classList.contains('hidden')) {
       closeSettingsModal();
       return;
     }
 
-    // Spacebar starts/pauses when not typing in form inputs
     if (e.code === 'Space' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
       e.preventDefault();
       if (timerState.isRunning) {
@@ -804,11 +906,10 @@ function attachEventListeners() {
     }
   });
 
-  // Tab visibility change handler (sync timer immediately when user switches back)
+  // Visibility change sync
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && timerState.isRunning) {
       tick();
     }
   });
 }
-

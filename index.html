@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pomodoro — Make time count</title>
-  <meta name="description" content="A calm, minimal, and aesthetic Pomodoro study timer to boost productivity and focus.">
+  <meta name="description" content="A calm, minimal, aesthetic, and fully functional Pomodoro & deep work study timer to boost productivity and focus.">
   <meta name="theme-color" content="#F8F7F4">
   
   <!-- Google Fonts: Inter -->
@@ -49,7 +49,7 @@
       <button id="themeToggleBtn" class="icon-btn" aria-label="Toggle dark mode" data-tooltip="Switch theme">
         <svg id="themeIconSun" class="icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="12" x2="12" y2="3"></line>
           <line x1="12" y1="21" x2="12" y2="23"></line>
           <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
           <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
@@ -89,6 +89,14 @@
         <button id="modeLongBreak" class="mode-tab" role="tab" aria-selected="false" data-mode="longBreak">Long Break</button>
       </nav>
 
+      <!-- Quick Duration Preset Chips -->
+      <div class="preset-chips-container" aria-label="Quick duration presets">
+        <span class="preset-label">Duration:</span>
+        <div id="presetChipsGroup" class="preset-chips">
+          <!-- Populated by JS for current mode, e.g. 15m, 25m, 45m, 50m, 60m, 90m -->
+        </div>
+      </div>
+
       <!-- Circular Countdown Display -->
       <div class="countdown-wrapper">
         <svg class="progress-ring" viewBox="0 0 320 320" aria-hidden="true">
@@ -102,12 +110,12 @@
         </div>
       </div>
 
-      <!-- Motivational Quote -->
+      <!-- Motivational Quote / Subtitle -->
       <p id="modeMessage" class="mode-message">Stay focused. You've got this.</p>
 
       <!-- Timer Controls -->
       <div class="timer-controls">
-        <button id="resetBtn" class="control-btn secondary-btn" aria-label="Reset current session" data-tooltip="Reset">
+        <button id="resetBtn" class="control-btn secondary-btn" aria-label="Reset current session" data-tooltip="Reset session">
           <svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
             <path d="M3 3v5h5"></path>
@@ -126,7 +134,7 @@
           <span id="startPauseLabel" class="btn-label">Start</span>
         </button>
 
-        <button id="skipBtn" class="control-btn secondary-btn" aria-label="Skip to next session" data-tooltip="Skip">
+        <button id="skipBtn" class="control-btn secondary-btn" aria-label="Skip to next session" data-tooltip="Skip session">
           <svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="5 4 15 12 5 20 5 4" fill="currentColor"></polygon>
             <line x1="19" y1="5" x2="19" y2="19"></line>
@@ -137,12 +145,15 @@
 
       <!-- Session Progress in current cycle -->
       <div class="session-progress-section">
-        <span class="section-label">TODAY'S SESSIONS</span>
+        <div class="cycle-header">
+          <span class="section-label">TODAY'S SESSIONS</span>
+          <button id="resetCycleBtn" class="text-link-btn" title="Reset cycle back to 0">Reset cycle</button>
+        </div>
         <div id="cycleDots" class="cycle-dots" aria-label="Current 4-session cycle progress">
-          <span class="dot" title="Session 1"></span>
-          <span class="dot" title="Session 2"></span>
-          <span class="dot" title="Session 3"></span>
-          <span class="dot" title="Session 4"></span>
+          <button class="dot" data-index="0" title="Set to 1 session completed" aria-label="Session 1"></button>
+          <button class="dot" data-index="1" title="Set to 2 sessions completed" aria-label="Session 2"></button>
+          <button class="dot" data-index="2" title="Set to 3 sessions completed" aria-label="Session 3"></button>
+          <button class="dot" data-index="3" title="Set to 4 sessions completed" aria-label="Session 4"></button>
         </div>
         <p id="cycleSummaryText" class="cycle-summary">0 of 4 focus sessions completed.</p>
       </div>
@@ -159,7 +170,14 @@
           </svg>
           <h3 class="card-title">Today's Focus Goal</h3>
         </div>
-        <span id="goalCountDisplay" class="goal-numbers">0 / 4 sessions</span>
+        
+        <div class="goal-actions">
+          <span id="goalCountDisplay" class="goal-numbers">0 / 4 sessions</span>
+          <div class="quick-counter-btns">
+            <button id="manualDecrementSessionBtn" class="counter-btn" aria-label="Remove 1 session" title="Decrease completed count">-</button>
+            <button id="manualIncrementSessionBtn" class="counter-btn" aria-label="Add 1 session" title="Increase completed count">+</button>
+          </div>
+        </div>
       </div>
 
       <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="goalProgressBarContainer">
@@ -216,14 +234,14 @@
   <!-- Footer -->
   <footer class="app-footer">
     <p class="footer-primary">Pomodoro — Make time count.</p>
-    <p class="footer-secondary">Designed for better focus and productive days.</p>
+    <p class="footer-secondary">Designed for better focus, deep work, and productive days.</p>
   </footer>
 
   <!-- Settings Modal -->
   <div id="settingsModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="settingsModalTitle" class="modal-title">Settings</h3>
+        <h3 id="settingsModalTitle" class="modal-title">Settings & Methods</h3>
         <button id="closeSettingsBtn" class="icon-btn close-btn" aria-label="Close settings modal">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -233,20 +251,44 @@
       </div>
 
       <form id="settingsForm" class="modal-body">
+        <!-- Popular Study Technique Templates -->
+        <div class="settings-group">
+          <h4 class="settings-group-title">Study Method Presets</h4>
+          <div class="technique-presets-grid">
+            <button type="button" class="technique-preset-btn" data-focus="25" data-short="5" data-long="15">
+              <span class="tech-name">Classic Pomodoro</span>
+              <span class="tech-desc">25m focus • 5m break</span>
+            </button>
+            <button type="button" class="technique-preset-btn" data-focus="50" data-short="10" data-long="20">
+              <span class="tech-name">50/10 Rule</span>
+              <span class="tech-desc">50m focus • 10m break</span>
+            </button>
+            <button type="button" class="technique-preset-btn" data-focus="60" data-short="10" data-long="15">
+              <span class="tech-name">Power Hour (60m)</span>
+              <span class="tech-desc">60m focus • 10m break</span>
+            </button>
+            <button type="button" class="technique-preset-btn" data-focus="90" data-short="20" data-long="30">
+              <span class="tech-name">Ultradian Flow (90m)</span>
+              <span class="tech-desc">90m focus • 20m break</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Durations -->
         <div class="settings-group">
           <h4 class="settings-group-title">Timer Durations (minutes)</h4>
           <div class="inputs-grid">
             <div class="form-field">
-              <label for="focusDurationInput">Focus</label>
-              <input type="number" id="focusDurationInput" min="1" max="120" value="25" required>
+              <label for="focusDurationInput">Focus (1–180)</label>
+              <input type="number" id="focusDurationInput" min="1" max="180" value="25" required>
             </div>
             <div class="form-field">
-              <label for="shortBreakInput">Short Break</label>
+              <label for="shortBreakInput">Short Break (1–60)</label>
               <input type="number" id="shortBreakInput" min="1" max="60" value="5" required>
             </div>
             <div class="form-field">
-              <label for="longBreakInput">Long Break</label>
-              <input type="number" id="longBreakInput" min="1" max="60" value="15" required>
+              <label for="longBreakInput">Long Break (1–90)</label>
+              <input type="number" id="longBreakInput" min="1" max="90" value="15" required>
             </div>
           </div>
         </div>
@@ -260,16 +302,19 @@
         </div>
 
         <div class="settings-group">
-          <h4 class="settings-group-title">Preferences</h4>
+          <h4 class="settings-group-title">Preferences & Sound</h4>
           <div class="toggle-field">
             <div class="toggle-text">
               <label for="soundPrefCheckbox" class="toggle-label">Notification Sound</label>
               <span class="toggle-desc">Play a gentle chime when a session finishes</span>
             </div>
-            <label class="switch">
-              <input type="checkbox" id="soundPrefCheckbox" checked>
-              <span class="slider"></span>
-            </label>
+            <div class="sound-controls-inline">
+              <button type="button" id="testSoundBtn" class="pill-action-btn" title="Preview chime sound">Test</button>
+              <label class="switch">
+                <input type="checkbox" id="soundPrefCheckbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
           </div>
 
           <div class="toggle-field">
@@ -307,4 +352,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-
